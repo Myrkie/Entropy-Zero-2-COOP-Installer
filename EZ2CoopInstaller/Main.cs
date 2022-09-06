@@ -13,7 +13,7 @@ public class EZ2COOPInstaller
     {
         if (!IsAdministrator())
         {
-            Console.WriteLine("This application must be run as administrator to create the symlink...\nPlease exist and run as administrator.");
+            Consolediff("This application must be run as administrator to create the symlink...\nPlease exist and run as administrator.");
             Thread.Sleep(5000);
             Environment.Exit(0);
         }
@@ -27,15 +27,17 @@ public class EZ2COOPInstaller
         RegistryKey registryKeySteamInstall = Registry.CurrentUser.OpenSubKey("Software\\Valve\\Steam");
         var SteamInstall = registryKeySteamInstall.GetValue("SteamPath","");
         
-        Console.WriteLine($"SourceModsPath: {SModInstall}");
+        Consolediff($"SourceModsPath: {SModInstall}");
 
         // steampath to EntropyZ2
         var steampath = SteamInstall + "/steamapps/common/EntropyZero2";
+        
+        // configuration file path
 
         var workshoppath = SteamInstall + "/steamapps/workshop/content/1583720/2856851374";
         var workshopdatapath = SteamInstall + "/steamapps/workshop/content/1583720/2856851374/ez2coop";
 
-        Console.WriteLine($"SteamPath: {steampath}");
+        Consolediff($"SteamPath: {steampath}");
 
 
         #region Funny string builder
@@ -91,7 +93,7 @@ public class EZ2COOPInstaller
         generategametext.AppendLine("\t\t}");
         generategametext.AppendLine("\t}");
         generategametext.AppendLine("}");
-        generategametext.Replace("%ABS_PATH%", $"{steampath}\\");
+        generategametext.Replace("%ABS_PATH%", $"{steampath}/");
 
 
 
@@ -99,31 +101,31 @@ public class EZ2COOPInstaller
 
         if (!Directory.Exists(workshopdatapath))
         {
-            Console.WriteLine("Path to mod doesnt exist, did you subscribe to workshop addon?");
+            Consolediff("Path to mod doesnt exist, did you subscribe to workshop addon?");
             Thread.Sleep(5000);
             Environment.Exit(0);
         }
-        var ez2cooppath = SModInstall + "\\ez2coop";
+        var ez2cooppath = SModInstall + "/ez2coop";
         
-        Console.WriteLine($"Workshopdatapath: {workshopdatapath}");
+        Consolediff($"Workshopdatapath: {workshopdatapath}");
 
         if (!Directory.Exists(ez2cooppath))
         {
-            Console.WriteLine("EZ2CoopPath: Doesnt exists... creating");
+            Consolediff("EZ2CoopPath: Doesnt exists... creating");
             Directory.CreateSymbolicLink(ez2cooppath, workshopdatapath);
         }
         else
         {
-            Console.WriteLine("EZ2CoopPath: exists... re-creating");
+            Consolediff("EZ2CoopPath: exists... re-creating");
             Directory.Delete(ez2cooppath,true);
             Directory.CreateSymbolicLink(ez2cooppath, workshopdatapath);
         }
 
-        var ez2coopGameInfo = workshoppath + "\\ez2coop" + "\\gameinfo.txt";
+        var ez2coopGameInfo = workshoppath + "/ez2coop" + "/gameinfo.txt";
 
         if (!File.Exists(ez2coopGameInfo))
         {
-            Console.WriteLine("GameInfo: Doesnt exists... creating");
+            Consolediff("GameInfo: Doesnt exists... creating");
             using (StreamWriter writer = new StreamWriter($"{ez2coopGameInfo}"))
             {
                 writer.WriteLine(generategametext);
@@ -131,17 +133,26 @@ public class EZ2COOPInstaller
         }
         else
         {
-            Console.WriteLine("GameInfo: exists... re-creating");
+            Consolediff("GameInfo: exists... re-creating");
             File.Delete(ez2coopGameInfo);
             using (StreamWriter writer = new StreamWriter($"{ez2coopGameInfo}"))
             {
                 writer.WriteLine(generategametext);
             }
         }
+        var configpath = steampath + "/entropyzero2/cfg/config.cfg";
+        Consolediff(configpath);
+        
+        var configez2coop = ez2cooppath + "/cfg/config.cfg";
+
+        if (File.Exists(configpath))
+        {
+            Consolediff("syncing Ez2 settings.");
+            File.Copy(configpath, configez2coop,true);
+        }else Consolediff("Ez2 settings not found ignoring.");
         
         
-        
-        Console.WriteLine("all operations completed successfully");
+        Consolediff("all operations completed successfully");
         
         Thread.Sleep(5000);
         Environment.Exit(0);
@@ -152,5 +163,11 @@ public class EZ2COOPInstaller
         var identity = WindowsIdentity.GetCurrent();
         var principal = new WindowsPrincipal(identity);
         return principal.IsInRole(WindowsBuiltInRole.Administrator);
+    }
+
+    private static void Consolediff(string debug)
+    {
+        Console.WriteLine("-----Output-----");
+        Console.WriteLine(debug);
     }
 }
