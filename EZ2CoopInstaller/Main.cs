@@ -43,6 +43,7 @@ public class EZ2COOPInstaller
             // configuration file path
 
             var workshoppath = SteamInstall + "/steamapps/workshop/content/1583720/2856851374";
+            var modcontent = SteamInstall + "/steamapps/workshop/content/1583720";
             var workshopdatapath = SteamInstall + "/steamapps/workshop/content/1583720/2856851374/ez2coop";
 
             Consolediff($"SteamPath: {steampath}");
@@ -101,8 +102,10 @@ public class EZ2COOPInstaller
             generategametext.AppendLine("\t\t}");
             generategametext.AppendLine("\t}");
             generategametext.AppendLine("}");
-            generategametext.Replace("%ABS_PATH%",
+            generategametext.Replace("%ABS_PATH%", 
                 $"{steampath}/");
+            generategametext.Replace("%ABS_PATH2%", 
+                $"{modcontent}/");
 
 
 
