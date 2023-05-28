@@ -35,7 +35,7 @@ public class EZ2COOPInstaller
                     Consolediff("Searching through " + drive.Name.Replace("\\", "") + " drive for EntropyZero2 install.");
                     DirectoryInfo rootDirectory = drive.RootDirectory;
                     // try to find steamapps folder
-                    string SteamApps = FindFolder(rootDirectory, "steamapps");
+                    string SteamApps = FindFolder(rootDirectory, "steamapps", true);
                     if (SteamApps != null && Directory.Exists(SteamApps + "\\common\\EntropyZero2"))
                     {
                         // if steamapps exists, set variables and notify user which drive it was found on
@@ -44,7 +44,21 @@ public class EZ2COOPInstaller
                         ModContent = SteamApps + "\\workshop\\content\\1583720\\2856851374";
                         Consolediff("Found EntropyZero2 install on drive " + drive.Name.Replace("\\", "") + " at path " + EntropyZeroInstall);
                         break;
-                    };
+                    }
+                    else
+                    {
+                        Consolediff("Could not find steamapps folder within 2 recursions from root. Scanning whole drive.");
+                        SteamApps = FindFolder(rootDirectory, "steamapps");
+                        if (SteamApps != null && Directory.Exists(SteamApps + "\\common\\EntropyZero2"))
+                        {
+                            // if steamapps exists, set variables and notify user which drive it was found on
+                            EntropyZeroInstall = SteamApps + "\\common\\EntropyZero2";
+                            CoopModInstall = SteamApps + "\\workshop\\content\\1583720\\2856851374\\ez2coop";
+                            ModContent = SteamApps + "\\workshop\\content\\1583720\\2856851374";
+                            Consolediff("Found EntropyZero2 install on drive " + drive.Name.Replace("\\", "") + " at path " + EntropyZeroInstall);
+                            break;
+                        };
+                    }
                 }
             }
             // var rundirectory = Directory.GetCurrentDirectory();
@@ -216,7 +230,7 @@ public class EZ2COOPInstaller
         Console.WriteLine(debug);
     }
 
-    private static string FindFolder(DirectoryInfo directory, string folderName)
+    private static string FindFolder(DirectoryInfo directory, string folderName, bool limitedRecursions = false, int recursions = 0)
     {
         // thanks chatgpt for this search code
         try
@@ -230,10 +244,24 @@ public class EZ2COOPInstaller
                     return subDirectory.FullName;
                 }
 
-                string foundPath = FindFolder(subDirectory, folderName);
-                if (!string.IsNullOrEmpty(foundPath))
+                if (limitedRecursions) {
+                    if (recursions < 2)
+                    {
+                        string foundPath = FindFolder(subDirectory, folderName, true, recursions + 1);
+                        if (!string.IsNullOrEmpty(foundPath))
+                        {
+                            return foundPath;
+                        }
+                    }
+                    
+                }
+                else
                 {
-                    return foundPath;
+                    string foundPath = FindFolder(subDirectory, folderName);
+                    if (!string.IsNullOrEmpty(foundPath))
+                    {
+                        return foundPath;
+                    }
                 }
 
             }
