@@ -1,4 +1,4 @@
-﻿// Copyright Myrkur @2022
+// Copyright Myrkur @2022
 
 using System.Security.Principal;
 using System.Text;
@@ -10,9 +10,6 @@ public class EZ2COOPInstaller
 {
     static void Main(string[] args)
     {
-
-        Consolediff(
-            "Warning: For this program to function Entropy Zero 2 has to be installed \non your C:/ Drive otherwise you will experience errors");
         if (!IsAdministrator())
         {
             Consolediff(
@@ -23,6 +20,33 @@ public class EZ2COOPInstaller
 
         try
         {
+            // temporarily declare empty variables
+            var CoopModInstall = "";
+            var EntropyZeroInstall = "";
+            var ModContent = "";
+
+            DriveInfo[] drives = DriveInfo.GetDrives();
+
+            foreach (DriveInfo drive in drives)
+            {
+                if (drive.IsReady)
+                {
+                    // search through drive
+                    Consolediff("Searching through " + drive.Name.Replace("\\", "") + " drive for EntropyZero2 install.");
+                    DirectoryInfo rootDirectory = drive.RootDirectory;
+                    // try to find steamapps folder
+                    string SteamApps = FindFolder(rootDirectory, "steamapps");
+                    if (SteamApps != null && Directory.Exists(SteamApps + "\\common\\EntropyZero2"))
+                    {
+                        // if steamapps exists, set variables and notify user which drive it was found on
+                        EntropyZeroInstall = SteamApps + "\\common\\EntropyZero2";
+                        CoopModInstall = SteamApps + "\\workshop\\content\\1583720\\2856851374\\ez2coop";
+                        ModContent = SteamApps + "\\workshop\\content\\1583720\\2856851374";
+                        Consolediff("Found EntropyZero2 install on drive " + drive.Name.Replace("\\", "") + " at path " + EntropyZeroInstall);
+                        break;
+                    };
+                }
+            }
             // var rundirectory = Directory.GetCurrentDirectory();
 
             // Get SourcemodPath from registry
@@ -30,23 +54,9 @@ public class EZ2COOPInstaller
             var SModInstall = registryKeySmodInstall.GetValue("SourceModInstallPath",
                 "");
 
-            // Get steamPath from registry
-            RegistryKey registryKeySteamInstall = Registry.CurrentUser.OpenSubKey("Software\\Valve\\Steam");
-            var SteamInstall = registryKeySteamInstall.GetValue("SteamPath",
-                "");
-
             Consolediff($"SourceModsPath: {SModInstall}");
 
-            // steampath to EntropyZ2
-            var steampath = SteamInstall + "/steamapps/common/EntropyZero2";
-
-            // configuration file path
-
-            var workshoppath = SteamInstall + "/steamapps/workshop/content/1583720/2856851374";
-            var modcontent = SteamInstall + "/steamapps/workshop/content/1583720";
-            var workshopdatapath = SteamInstall + "/steamapps/workshop/content/1583720/2856851374/ez2coop";
-
-            Consolediff($"SteamPath: {steampath}");
+            Consolediff($"SteamPath: {EntropyZeroInstall}");
 
 
             #region Funny string builder
@@ -102,16 +112,16 @@ public class EZ2COOPInstaller
             generategametext.AppendLine("\t\t}");
             generategametext.AppendLine("\t}");
             generategametext.AppendLine("}");
-            generategametext.Replace("%ABS_PATH%", 
-                $"{steampath}/");
-            generategametext.Replace("%ABS_PATH2%", 
-                $"{modcontent}/");
+            generategametext.Replace("%ABS_PATH%",
+                $"{EntropyZeroInstall}/");
+            generategametext.Replace("%ABS_PATH2%",
+                $"{ModContent}/");
 
 
 
             #endregion
 
-            if (!Directory.Exists(workshopdatapath))
+            if (!Directory.Exists(CoopModInstall))
             {
                 Consolediff("Path to mod doesnt exist, did you subscribe to workshop addon?");
                 Thread.Sleep(5000);
@@ -120,13 +130,13 @@ public class EZ2COOPInstaller
 
             var ez2cooppath = SModInstall + "/ez2coop";
 
-            Consolediff($"Workshopdatapath: {workshopdatapath}");
+            Consolediff($"Workshopdatapath: {CoopModInstall}");
 
             if (!Directory.Exists(ez2cooppath))
             {
                 Consolediff("EZ2CoopPath: Doesnt exists... creating");
                 Directory.CreateSymbolicLink(ez2cooppath,
-                    workshopdatapath);
+                    CoopModInstall);
             }
             else
             {
@@ -134,10 +144,10 @@ public class EZ2COOPInstaller
                 Directory.Delete(ez2cooppath,
                     true);
                 Directory.CreateSymbolicLink(ez2cooppath,
-                    workshopdatapath);
+                    CoopModInstall);
             }
 
-            var ez2coopGameInfo = workshoppath + "/ez2coop" + "/gameinfo.txt";
+            var ez2coopGameInfo = ModContent + "/ez2coop" + "/gameinfo.txt";
 
             if (!File.Exists(ez2coopGameInfo))
             {
@@ -157,10 +167,17 @@ public class EZ2COOPInstaller
                 }
             }
 
-            var configpath = steampath + "/entropyzero2/cfg/config.cfg";
+            var configpath = EntropyZeroInstall + "/entropyzero2/cfg/config.cfg";
             Consolediff(configpath);
 
             var configez2coop = ez2cooppath + "/cfg/config.cfg";
+
+            // verify that the cfg folder exists, to circumvent an error that happens if it doesn't exist
+
+            if (!Directory.Exists(ez2cooppath + "/cfg"))
+            {
+                Directory.CreateDirectory(ez2cooppath + "/cfg");
+            }
 
             if (File.Exists(configpath))
             {
@@ -197,5 +214,39 @@ public class EZ2COOPInstaller
     {
         Console.WriteLine("-----Output-----");
         Console.WriteLine(debug);
+    }
+
+    private static string FindFolder(DirectoryInfo directory, string folderName)
+    {
+        // thanks chatgpt for this search code
+        try
+        {
+            DirectoryInfo[] subDirectories = directory.GetDirectories();
+
+            foreach (DirectoryInfo subDirectory in subDirectories)
+            {
+                if (subDirectory.Name.Equals(folderName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return subDirectory.FullName;
+                }
+
+                string foundPath = FindFolder(subDirectory, folderName);
+                if (!string.IsNullOrEmpty(foundPath))
+                {
+                    return foundPath;
+                }
+
+            }
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Handle unauthorized access exception if required
+        }
+        catch (DirectoryNotFoundException)
+        {
+            // Handle directory not found exception if required
+        }
+
+        return null;
     }
 }
